@@ -3,14 +3,15 @@ import frappe
 
 # 🌍 Base URL of your ERPNext/Frappe site
 BASE_URL = "http://localhost:8000"
-
+API_KEY = ""
+API_SECRET = ""
 
 @frappe.whitelist(allow_guest=True)
 def test_endpoint():    
     # 📄 Step 1: Prepare headers for authentication
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "token {api_key}:{api_secret}"  # Change with your site api key and secret
+        "Authorization": f"token {API_KEY}:{API_SECRET}"  # Change with your site api key and secret
     }
 
     # 🛒 Step 2: Define Sales Order payload (sales order body)
