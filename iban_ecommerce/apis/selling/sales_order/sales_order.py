@@ -5,23 +5,15 @@ import frappe
 BASE_URL = "http://localhost:8000"
 
 
-@frappe.whitelist()
-def test_endpoint():
-    # 🔑 Step 1: Login and get session id (sid)
-    sid = login("administrator", "Angel0068j")
-    if not sid:
-        # ❌ Stop execution if login failed
-        frappe.throw("Login failed! Could not retrieve session ID.")
-    
-    # 📄 Step 2: Prepare headers and cookies for authentication
+@frappe.whitelist(allow_guest=True)
+def test_endpoint():    
+    # 📄 Step 1: Prepare headers for authentication
     headers = {
-        "Content-Type": "application/json"
-    }
-    cookies = {
-        "sid": sid  # 🍪 Attach session ID as cookie
+        "Content-Type": "application/json",
+        "Authorization": "token {api_key}:{api_secret}"  # Change with your site api key and secret
     }
 
-    # 🛒 Step 3: Define Sales Order payload
+    # 🛒 Step 2: Define Sales Order payload (sales order body)
     sales_order_payload = {
         "is_submittable": 1,  
         "customer": "E-Commerce",  
@@ -41,15 +33,14 @@ def test_endpoint():
         ]
     }
 
-    # 📡 Step 4: Send POST request to create Sales Order
+    # 📡 Step 3: Send POST request to create Sales Order
     so_res = requests.post(
         f"{BASE_URL}/api/method/iban_ecommerce.apis.selling.sales_order.sales_order.create_sales_order",
         json=sales_order_payload,
         headers=headers,
-        cookies=cookies
     )
 
-    # 📤 Step 5: Return response JSON
+    # 📤 Step 4: Return response JSON
     return so_res.json()
 
 
