@@ -93,6 +93,20 @@ def create_sales_order():
 
     # 📄 Create Sales Order document
     so_doc = frappe.get_doc(data)
+
+    # 🔢 Recalculate taxes and totals
+    so_doc.run_method("set_missing_values")
+    so_doc.run_method("set_taxes")
+
+    # ✅ Fix missing ETA tax fields
+    for tax in so_doc.taxes:
+        if not tax.eta_tax_type:
+            tax.eta_tax_type = "T1"  
+        if not tax.eta_tax_sub_type:
+            tax.eta_tax_sub_type = "V001" 
+
+    so_doc.run_method("calculate_taxes_and_totals")
+
     so_doc.insert(ignore_permissions=True)
 
     # 🚀 Optionally submit if flag provided
@@ -206,3 +220,37 @@ def validate_item(item_data):
     frappe.db.commit()
 
     return item_doc.name
+
+
+@frappe.whitelist()
+def submit_sales_order(order_id):
+    try:
+        # Fetch the Sales Order using the po_no field
+        so_doc = frappe.get_doc('Sales Order', {"po_no": order_id})
+
+        if not so_doc:
+            return f"No Sales Order found with PO No: {order_id}"
+
+        # Check if it's already submitted
+        if so_doc.docstatus == 0:
+            so_doc.submit()
+            frappe.db.commit()
+
+        return {
+            "status": "success",
+            "message": f"Sales Order {so_doc.name} has been successfully submitted."
+        }
+
+    except frappe.DoesNotExistError:
+        frappe.log_error(f"Sales Order not found for PO No: {order_id}", "submit_sales_order")
+        return {
+            "status": "error",
+            "message": f"No Sales Order found with PO No: {order_id}"
+        }
+
+    except Exception as e:
+        frappe.log_error(message=frappe.get_traceback(), title="submit_sales_order failed")
+        return {
+            "status": "error",
+            "message": f"An error occurred while submitting Sales Order: {str(e)}"
+        }
