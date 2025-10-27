@@ -254,3 +254,85 @@ def submit_sales_order(order_id):
             "status": "error",
             "message": f"An error occurred while submitting Sales Order: {str(e)}"
         }
+
+
+@frappe.whitelist()
+def cancel_sales_order(order_id):
+    # lookup sales order by PO number
+    so = frappe.get_doc("Sales Order", {"po_no": order_id})
+    if not so:
+        return f"No Sales Order found for PO No: {order_id}"
+
+    cancelled_invoices = []
+    cancelled_payments = []
+    errors = []
+
+    # find all Sales Invoices that reference this Sales Order in Sales Invoice Item
+    invoice_rows = frappe.db.sql("""
+        SELECT DISTINCT sii.parent AS invoice_name
+        FROM `tabSales Invoice Item` AS sii
+        WHERE sii.sales_order = %s
+    """, (so.name,), as_dict=True)
+
+    invoice_names = [r.invoice_name for r in invoice_rows]
+
+    # Cancel related Payment Entries first (those linked to each invoice)
+    for inv_name in invoice_names:
+        try:
+            # find Payment Entries that reference this invoice
+            payment_rows = frappe.db.sql("""
+                SELECT DISTINCT per.parent AS payment_name
+                FROM `tabPayment Entry Reference` AS per
+                WHERE 
+                    per.reference_name = %s
+                    AND per.reference_doctype = 'Sales Invoice'
+            """, (inv_name,), as_dict=True)
+
+            for prow in payment_rows:
+                pe_name = prow.payment_name
+                try:
+                    pe = frappe.get_doc("Payment Entry", pe_name)
+                    if pe.docstatus == 1:
+                        pe.cancel()
+                        frappe.db.commit()
+                        cancelled_payments.append(pe_name)
+                except Exception as e:
+                    errors.append(f"Payment Entry {pe_name} cancel error: {e}")
+        except Exception as e:
+            errors.append(f"Error finding payments for invoice {inv_name}: {e}")
+
+    # Cancel the Sales Invoices
+    for inv_name in invoice_names:
+        try:
+            invoice = frappe.get_doc("Sales Invoice", inv_name)
+            
+            # reload to avoid concurrency issue
+            invoice.reload()
+            
+            if invoice.docstatus == 1:
+                invoice.cancel()
+                frappe.db.commit()
+                cancelled_invoices.append(inv_name)
+        except Exception as e:
+            errors.append(f"Sales Invoice {inv_name} cancel error: {e}")
+
+    # Finally cancel the Sales Order itself
+    try:
+        # reload to avoid concurrency issue
+        so.reload()
+
+        if so.docstatus == 1:
+            so.cancel()
+            frappe.db.commit()
+        else:
+            pass
+    except Exception as e:
+        errors.append(f"Sales Order {so.name} cancel error: {e}")
+
+    return {
+        "status": "Success" if not errors else "Failure",
+        "sales_order": so.name,
+        "cancelled_invoices": cancelled_invoices,
+        "cancelled_payments": cancelled_payments,
+        "errors": errors,
+    }

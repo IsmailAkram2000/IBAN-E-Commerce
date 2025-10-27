@@ -137,13 +137,25 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Sales Order": {
+		"before_insert": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.before_insert",
+		"after_insert": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.after_insert",
+		"onload": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.onload",
+		"before_validate": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.before_validate",
+		"validate": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.validate",
+		"on_submit": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.on_submit",
+		"on_cancel": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.on_cancel",
+		"on_update_after_submit": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.on_update_after_submit",
+		"before_save": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.before_save",
+		"before_cancel": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.before_cancel",
+		"on_update": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.on_update",
+	},
+}
+
+doctype_js = {
+    "Sales Order" : "doctype_triggers/selling/sales_order/sales_order.js",
+}
 
 # Scheduled Tasks
 # ---------------
