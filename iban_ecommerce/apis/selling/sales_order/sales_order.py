@@ -1,5 +1,6 @@
 import requests
 import frappe
+from frappe.custom.doctype.custom_field.custom_field import create_custom_field
 
 # 🌍 Base URL of your ERPNext/Frappe site
 BASE_URL = "http://localhost:8000"
@@ -73,6 +74,9 @@ def login(usr, pwd):
 
 @frappe.whitelist()
 def create_sales_order():
+    # 🔒 Ensure custom field exists before proceeding
+    ensure_mode_of_payment_field()
+
     # 📥 Get JSON body from API request
     data = frappe.request.get_json()
 
@@ -336,3 +340,21 @@ def cancel_sales_order(order_id):
         "cancelled_payments": cancelled_payments,
         "errors": errors,
     }
+
+
+def ensure_mode_of_payment_field():
+    # Create custom field 'mode_of_payment' in Sales Order if it doesn't exist.
+    if not frappe.db.exists("Custom Field", {"dt": "Sales Order", "fieldname": "custom_mode_of_payment"}):
+        create_custom_field(
+            "Sales Order",
+            {
+                "fieldname": "custom_mode_of_payment",
+                "label": "Mode of Payment",
+                "fieldtype": "Link",
+                "options": "Mode of Payment",
+                "insert_after": "payment_terms_template",
+                "reqd": 0,
+                "hidden": 1,
+            }
+        )
+        frappe.db.commit()
