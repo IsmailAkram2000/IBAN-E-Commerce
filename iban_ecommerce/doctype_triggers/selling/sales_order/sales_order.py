@@ -70,15 +70,15 @@ def create_sales_invoice(sales_order):
         invoice.due_date = frappe.utils.nowdate()
         invoice.update_stock = 1
         invoice.is_pos = 1
-        
+
         # Collect unique (account_head, rate) pairs from Item Tax Templates
         tax_map = set()
         
         for row in invoice.items:
             item_tax_template = row.item_tax_template = frappe.get_value("Item Tax", {
                 "parent": row.item_code,
-            }, "item_tax_template")
-            row.item_tax_template = item_tax_template
+            }, "item_tax_template") or "الضريبة القياسية %15 - ذهول"
+            row.item_tax_template = item_tax_template 
 
             if item_tax_template:
                 taxes = frappe.get_all(
