@@ -68,6 +68,7 @@ def create_sales_invoice(sales_order):
 
         # Set mandatory values
         invoice.due_date = frappe.utils.nowdate()
+        invoice.update_stock = 1
         invoice.is_pos = 1
         
         # Collect unique (account_head, rate) pairs from Item Tax Templates
