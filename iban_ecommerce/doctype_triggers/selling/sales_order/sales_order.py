@@ -16,12 +16,9 @@ def before_validate(doc, method=None):
 @frappe.whitelist()
 def validate(doc, method=None):
     pass
-    
 @frappe.whitelist()
 def on_submit(doc, method=None):
-    # Create Sales Invoice
-    create_sales_invoice(doc)
-
+    pass
 @frappe.whitelist()
 def on_cancel(doc, method=None):
     pass
@@ -111,7 +108,7 @@ def create_sales_invoice(sales_order):
             invoice.append("payments", {
                 "mode_of_payment": mode_of_payment,
                 "account": account,
-                "amount": invoice.grand_total
+                "amount": max(invoice.grand_total or 0, invoice.rounded_total or 0)
             })
         
         invoice.ignore_permissions = True

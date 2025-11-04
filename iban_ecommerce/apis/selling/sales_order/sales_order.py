@@ -1,81 +1,17 @@
 import requests
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_field
+from iban_ecommerce.doctype_triggers.selling.sales_order.sales_order import create_sales_invoice
 
 # 🌍 Base URL of your ERPNext/Frappe site
 BASE_URL = "http://localhost:8000"
 API_KEY = ""
 API_SECRET = ""
 
-@frappe.whitelist(allow_guest=True)
-def test_endpoint():    
-    # 📄 Step 1: Prepare headers for authentication
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"token {API_KEY}:{API_SECRET}"  # Change with your site api key and secret
-    }
-
-    # 🛒 Step 2: Define Sales Order payload (sales order body)
-    sales_order_payload = {
-        "is_submittable": 1,  
-        "customer": "E-Commerce",  
-        "transaction_date": "2025-09-15", 
-        "delivery_date": "2025-09-15",    
-        "set_warehouse": "Finished Goods - ESD",
-        "items": [
-            {
-                "item_code": "SKU005", 
-                "item_name": "T-shirt", 
-                "description": "T-shirt", 
-                "item_group": "Demo Item Group", 
-                "qty": 1,   
-                "rate": 800,
-                "amount": 800
-            }
-        ]
-    }
-
-    # 📡 Step 3: Send POST request to create Sales Order
-    so_res = requests.post(
-        f"{BASE_URL}/api/method/iban_ecommerce.apis.selling.sales_order.sales_order.create_sales_order",
-        json=sales_order_payload,
-        headers=headers,
-    )
-
-    # 📤 Step 4: Return response JSON
-    return so_res.json()
-
-
-@frappe.whitelist()
-def login(usr, pwd):
-    # 📡 Send login request with username + password
-    login_res = requests.post(
-        f"{BASE_URL}/api/method/login",
-        json={
-            "usr": usr,
-            "pwd": pwd
-        }
-    )
-
-    # ✅ Check if login succeeded
-    if login_res.status_code != 200:
-        frappe.throw(f"Login request failed.")
-
-    # 🍪 Extract session ID (sid) from cookies
-    sid = login_res.cookies.get("sid")
-
-    if not sid:
-        # ❌ No sid returned → invalid login
-        frappe.throw("Invalid credentials or login failed!")
-
-    # 🔑 Return sid for authentication
-    return sid
-
-
 @frappe.whitelist()
 def create_sales_order():
     # 🔒 Ensure custom field exists before proceeding
-    ensure_mode_of_payment_field()
+    ensure_missing_fields()
 
     # 📥 Get JSON body from API request
     data = frappe.request.get_json()
@@ -86,11 +22,6 @@ def create_sales_order():
         frappe.throw("Items list is required and must contain at least one item")
     for item in data["items"]:
         validate_required_fields(item, ["item_code", "qty", "rate"])
-
-    # 🔎 Validate or create related documents
-    data["customer"] = validate_customer(data["customer"])
-    data["set_warehouse"] = validate_warehouse(data["set_warehouse"])
-    data["items"] = validate_items(data["items"])
 
     # 📝 Ensure the correct doctype
     data["doctype"] = "Sales Order"
@@ -118,6 +49,9 @@ def create_sales_order():
         so_doc.submit()
 
     frappe.db.commit()
+
+    if data.get('is_submittable'):
+        create_sales_invoice(so_doc.name)
 
     # 📤 Return the inserted Sales Order as dictionary
     return so_doc.as_dict()
@@ -240,6 +174,8 @@ def submit_sales_order(order_id):
             so_doc.submit()
             frappe.db.commit()
 
+        create_sales_invoice(so_doc.name)
+
         return {
             "status": "success",
             "message": f"Sales Order {so_doc.name} has been successfully submitted."
@@ -342,7 +278,7 @@ def cancel_sales_order(order_id):
     }
 
 
-def ensure_mode_of_payment_field():
+def ensure_missing_fields():
     # Create custom field 'mode_of_payment' in Sales Order if it doesn't exist.
     if not frappe.db.exists("Custom Field", {"dt": "Sales Order", "fieldname": "custom_mode_of_payment"}):
         create_custom_field(
@@ -357,4 +293,29 @@ def ensure_mode_of_payment_field():
                 "hidden": 1,
             }
         )
-        frappe.db.commit()
+    if not frappe.db.exists("Custom Field", {"dt": "Sales Order", "fieldname": "custom_shipping_company"}):
+        create_custom_field(
+            "Sales Order",
+            {
+                "fieldname": "custom_shipping_company",
+                "label": "Shipping Company",
+                "fieldtype": "Link",
+                "options": "Shipping Company",
+                "insert_after": "payment_terms_template",
+                "reqd": 0,
+                "hidden": 1,
+            }
+        )
+    if not frappe.db.exists("Custom Field", {"dt": "Sales Order", "fieldname": "custom_shipping_amount"}):
+        create_custom_field(
+            "Sales Order",
+            {
+                "fieldname": "custom_shipping_amount",
+                "label": "Shipping Amount",
+                "fieldtype": "Float",
+                "insert_after": "payment_terms_template",
+                "reqd": 0,
+                "hidden": 1,
+            }
+        )
+    frappe.db.commit()
