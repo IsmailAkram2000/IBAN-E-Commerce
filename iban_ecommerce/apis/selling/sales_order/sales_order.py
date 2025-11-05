@@ -29,7 +29,8 @@ def create_sales_order():
     # 📄 Create Sales Order document
     so_doc = frappe.get_doc(data)
 
-    if so_doc.custom_shipping_company:
+    # if so_doc.custom_shipping_company:
+    #     so_doc.custom_shipping_amount = frappe.get_value('Shipping Company', 'so_doc.custom_shipping_company', 'amount')
 
     # 🔢 Recalculate taxes and totals
     so_doc.run_method("set_missing_values")
