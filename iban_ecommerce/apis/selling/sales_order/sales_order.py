@@ -23,6 +23,9 @@ def create_sales_order():
     for item in data["items"]:
         validate_required_fields(item, ["item_code", "qty", "rate"])
 
+    # 🔎 Validate or create related documents
+    data["items"] = validate_items(data["items"])
+
     # 📝 Ensure the correct doctype
     data["doctype"] = "Sales Order"
 
@@ -108,7 +111,6 @@ def validate_items(items):
     # 📦 Validate each item and it's details
     validated_items = []
     for item in items:
-        item["item_group"] = validate_item_group(item.get("item_group"))
         item["item_code"] = validate_item(item)
         item['price_list_rate'] = item.get('rate', 0) or 0  # 💲 Ensure price field is set
         validated_items.append(item)
@@ -141,7 +143,7 @@ def validate_item_group(item_group):
 def validate_item(item_data):
     # 🛒 Check if item exists, else create new one
     item_code = item_data.get("item_code")
-    item_group = item_data.get("item_group") or "All Item Groups"
+    item_group = item_data.get("item_group") or "اونلاين"
 
     existing_item = frappe.get_value("Item", {"item_code": item_code}, "name")
     if not existing_item:
@@ -155,9 +157,14 @@ def validate_item(item_data):
         "item_name": item_code,
         "item_group": item_group,
         "stock_uom": "Nos",
-        "is_stock_item": 1
+        "is_stock_item": 1,
     })
+    
     item_doc.insert(ignore_permissions=True)
+    item_doc.append("taxes", {
+        "item_tax_template": "الضريبة القياسية %15 - ذهول",
+    })
+    item_doc.save(ignore_permissions=True)
     frappe.db.commit()
 
     return item_doc.name
