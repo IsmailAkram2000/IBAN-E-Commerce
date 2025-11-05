@@ -29,6 +29,8 @@ def create_sales_order():
     # 📄 Create Sales Order document
     so_doc = frappe.get_doc(data)
 
+    if so_doc.custom_shipping_company:
+
     # 🔢 Recalculate taxes and totals
     so_doc.run_method("set_missing_values")
     so_doc.run_method("set_taxes")
@@ -51,7 +53,7 @@ def create_sales_order():
     frappe.db.commit()
 
     if data.get('is_submittable'):
-        create_sales_invoice(so_doc.name)
+        create_sales_invoice(so_doc)
 
     # 📤 Return the inserted Sales Order as dictionary
     return so_doc.as_dict()
@@ -174,7 +176,7 @@ def submit_sales_order(order_id):
             so_doc.submit()
             frappe.db.commit()
 
-        create_sales_invoice(so_doc.name)
+        create_sales_invoice(so_doc)
 
         return {
             "status": "success",
