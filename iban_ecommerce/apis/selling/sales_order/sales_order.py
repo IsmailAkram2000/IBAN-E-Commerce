@@ -184,7 +184,7 @@ def submit_sales_order(order_id):
             so_doc.submit()
             frappe.db.commit()
 
-        create_sales_invoice(so_doc)
+            create_sales_invoice(so_doc)
 
         return {
             "status": "success",
