@@ -150,6 +150,8 @@ def validate_item(item_data):
         existing_item = frappe.get_value("Item", {"name": item_code}, "name")
     if not existing_item:
         existing_item = frappe.get_value("Item", {"item_name": item_code}, "name")
+    if not existing_item:
+        existing_item = frappe.get_value("Item", {"custom_item_id": item_code}, "name")
     if existing_item:
         return existing_item
 
