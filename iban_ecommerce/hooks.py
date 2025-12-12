@@ -151,10 +151,24 @@ doc_events = {
 		"before_cancel": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.before_cancel",
 		"on_update": "iban_ecommerce.doctype_triggers.selling.sales_order.sales_order.on_update",
 	},
+	"Employee Checkin": {
+		"before_insert": "iban_ecommerce.doctype_triggers.hr.employee_checkin.employee_checkin.before_insert",
+		"after_insert": "iban_ecommerce.doctype_triggers.hr.employee_checkin.employee_checkin.after_insert",
+		"onload": "iban_ecommerce.doctype_triggers.hr.employee_checkin.employee_checkin.onload",
+		"before_validate": "iban_ecommerce.doctype_triggers.hr.employee_checkin.employee_checkin.before_validate",
+		"validate": "iban_ecommerce.doctype_triggers.hr.employee_checkin.employee_checkin.validate",
+		"on_submit": "iban_ecommerce.doctype_triggers.hr.employee_checkin.employee_checkin.on_submit",
+		"on_cancel": "iban_ecommerce.doctype_triggers.hr.employee_checkin.employee_checkin.on_cancel",
+		"on_update_after_submit": "iban_ecommerce.doctype_triggers.hr.employee_checkin.employee_checkin.on_update_after_submit",
+		"before_save": "iban_ecommerce.doctype_triggers.hr.employee_checkin.employee_checkin.before_save",
+		"before_cancel": "iban_ecommerce.doctype_triggers.hr.employee_checkin.employee_checkin.before_cancel",
+		"on_update": "iban_ecommerce.doctype_triggers.hr.employee_checkin.employee_checkin.on_update",
+	},
 }
 
 doctype_js = {
     "Sales Order" : "doctype_triggers/selling/sales_order/sales_order.js",
+    "Employee Checkin" : "doctype_triggers/hr/employee_checkin/employee_checkin.js",
 }
 
 # Scheduled Tasks
